@@ -1,0 +1,24 @@
+# Dependencies and Bundler settings
+/vendor/bundle
+/.bundle
+
+# Build outputs
+/public/assets
+/tmp/*
+!/tmp/.keep
+/log/*
+!/log/.keep
+/storage/*
+
+# Secrets and local settings
+.env*
+!.env.example
+/config/master.key
+/config/credentials/*.key
+.clever.json
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,190 @@
+<% content_for :title, "Neon Arcade · Ruby on Rails + Redis on Clever Cloud" %>
+
+<header class="cc-topbar">
+  <div class="cc-container cc-topbar__inner">
+    <a href="https://www.clever.cloud" target="_blank" rel="noopener" aria-label="Clever Cloud"><%= inline_svg "cc-logo.svg", "cc-logo" %></a>
+    <span class="cc-topbar__sep"></span>
+    <div class="cc-topbar__demo"><small>Demo</small>Ruby on Rails + Redis</div>
+    <span class="cc-topbar__spacer"></span>
+    <nav class="cc-topbar__nav" aria-label="Status">
+      <span class="cc-pill cc-pill--mono cc-hide-sm">Ruby <%= RUBY_VERSION %> · Rails <%= Rails.version %> · Redis add-on</span>
+      <span class="cc-pill cc-pill--live"><span class="cc-dot"></span>Live on Clever Cloud</span>
+      <a class="cc-pill cc-pill--gradient" href="https://academy.clever.cloud/" target="_blank" rel="noopener">Get certified ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main class="arcade">
+  <div class="arcade__inner">
+
+    <%# LED ticker: the capped Redis list of the last 20 scores %>
+    <section class="ticker" aria-label="Last 20 scores">
+      <span class="ticker__label">Last 20</span>
+      <div class="ticker__window"><div class="ticker__track" id="ticker"></div></div>
+      <code class="ticker__cmd">LRANGE arcade:ticker 0 19</code>
+    </section>
+
+    <div class="floor">
+
+      <%# Wall scoreboard: two Redis sorted sets %>
+      <section class="wall" aria-labelledby="wall-title">
+        <h2 class="wall__title" id="wall-title">High scores</h2>
+
+        <div class="led">
+          <h3 class="led__head">All-time</h3>
+          <ol class="led__rows" id="board-alltime"></ol>
+          <p class="cmd" data-cmd="ZREVRANGE arcade:board:alltime">ZREVRANGE arcade:board:alltime 0 9 WITHSCORES</p>
+        </div>
+
+        <div class="led">
+          <h3 class="led__head">Today</h3>
+          <ol class="led__rows" id="board-today"></ol>
+          <div class="led__ttl">
+            <span>Board expires in</span>
+            <strong id="ttl-clock">--:--:--</strong>
+          </div>
+          <p class="cmd" id="today-cmd">ZREVRANGE arcade:board:today 0 4 WITHSCORES</p>
+        </div>
+      </section>
+
+      <%# The cabinet %>
+      <section class="cabinet" aria-label="TTL Rush arcade cabinet">
+        <div class="marquee"><span class="marquee__neon">Neon Arcade</span></div>
+
+        <div class="cabinet__body">
+          <div class="bezel">
+            <div class="screen" id="screen">
+              <canvas id="game" width="600" height="800" role="img" aria-label="TTL Rush game screen. Press Start to play."></canvas>
+
+              <form class="entry" id="entry" hidden>
+                <p class="entry__title">Game over</p>
+                <p class="entry__score" id="entry-score">0</p>
+                <p class="entry__stats" id="entry-stats"></p>
+                <p class="entry__prompt">Enter your initials</p>
+                <div class="entry__slots" role="group" aria-label="Initials">
+                  <% 3.times do |i| %>
+                    <div class="slot" data-slot="<%= i %>">
+                      <button type="button" class="slot__btn" data-step="1" aria-label="Letter <%= i + 1 %>: next">▲</button>
+                      <output class="slot__letter" tabindex="0" aria-label="Letter <%= i + 1 %>">A</output>
+                      <button type="button" class="slot__btn" data-step="-1" aria-label="Letter <%= i + 1 %>: previous">▼</button>
+                    </div>
+                  <% end %>
+                </div>
+                <div class="entry__actions">
+                  <button type="submit" class="entry__save">Save score</button>
+                  <button type="button" class="entry__skip" id="entry-skip">Skip</button>
+                </div>
+                <p class="entry__error" id="entry-error" role="alert"></p>
+              </form>
+            </div>
+            <p class="bezel__art">Hit every key before its TTL runs out</p>
+          </div>
+
+          <div class="panel">
+            <svg class="panel__stick" viewBox="0 0 60 70" aria-hidden="true">
+              <ellipse cx="30" cy="60" rx="24" ry="8" fill="#05061a"/>
+              <ellipse cx="30" cy="57" rx="20" ry="6" fill="#1b1e3f"/>
+              <rect x="27" y="22" width="6" height="36" rx="3" fill="#2a2e55"/>
+              <circle cx="30" cy="18" r="14" fill="#cb1c42"/>
+              <circle cx="25" cy="13" r="5" fill="#f57461" opacity=".85"/>
+            </svg>
+            <div class="panel__buttons">
+              <div class="panel__group">
+                <button type="button" class="arcade-btn arcade-btn--start" id="start">Start</button>
+                <span class="panel__label">1P start</span>
+              </div>
+              <div class="panel__group">
+                <button type="button" class="arcade-btn arcade-btn--sound" id="sound" aria-pressed="false">Sound</button>
+                <span class="panel__label" id="sound-label">Sound off</span>
+              </div>
+            </div>
+          </div>
+
+          <%# Coin door: the mechanical counter is a Redis INCR %>
+          <div class="coindoor">
+            <div class="coindoor__slot"><span class="coin"></span><span class="coindoor__label">Free play</span></div>
+            <div class="counter">
+              <span class="counter__label">Games played</span>
+              <span class="counter__digits" id="games" aria-live="polite">000000</span>
+              <code class="counter__cmd">INCR arcade:games_played</code>
+            </div>
+            <div class="coindoor__slot"><span class="coin"></span><span class="coindoor__label">Free play</span></div>
+          </div>
+        </div>
+      </section>
+
+      <%# Operator's service menu: what Redis just did %>
+      <section class="service" aria-labelledby="service-title">
+        <div class="service__frame">
+          <div class="service__head">
+            <h2 id="service-title">Service menu</h2>
+            <span class="service__live" id="live">Polling</span>
+          </div>
+          <div class="service__screen">
+            <h3 id="cmds-title">Redis · last game</h3>
+            <p class="service__game" id="last-game">Press Start, play 20 seconds, save your initials: every Redis command the game runs appears here.</p>
+            <ol class="cmds" id="commands"></ol>
+
+            <h3>Bookkeeping</h3>
+            <dl class="books">
+              <div><dt>Games played</dt><dd id="bk-games">0</dd><code>GET</code></div>
+              <div><dt>All-time entries</dt><dd id="bk-alltime">0</dd><code>ZCARD</code></div>
+              <div><dt>Today entries</dt><dd id="bk-today">0</dd><code>ZCARD</code></div>
+              <div><dt>Today TTL</dt><dd id="bk-ttl">0 s</dd><code>TTL</code></div>
+              <div><dt>Memory used</dt><dd id="bk-memory">-</dd><code>INFO memory</code></div>
+            </dl>
+            <p class="service__offline" id="offline" <%= "hidden" if @snapshot %>>Redis did not answer. Check that the add-on is linked and REDIS_URL is set.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <%# Clever frame: what the platform injected %>
+    <section class="cc-platform platform" aria-labelledby="platform-title">
+      <div class="cc-platform__head">
+        <h3 id="platform-title">Running on Clever Cloud</h3>
+        <span class="cc-pill cc-pill--ok"><span class="cc-dot"></span><%= ENV["INSTANCE_TYPE"].presence || "local" %></span>
+      </div>
+      <dl class="cc-kv">
+        <% platform_vars.each do |name, label, value| %>
+          <div><dt><%= label %></dt><dd class="<%= "is-empty" unless value %>" title="<%= name %>"><%= value || "set at deploy" %></dd></div>
+        <% end %>
+      </dl>
+      <div class="cc-platform__foot">Variables injected by the platform at deploy time: <a href="https://www.clever.cloud/developers/doc/develop/common-configuration/environment-variables/reference/" target="_blank" rel="noopener">reference</a>.</div>
+    </section>
+  </div>
+</main>
+
+<footer class="cc-footer">
+  <div class="cc-container">
+    <div class="cc-footer__inner">
+      <div class="cc-footer__brand">
+        <%= inline_svg "cc-logo.svg", "cc-logo" %>
+        <p>European PaaS, fully managed. Deploy with a git push, the platform takes care of the rest.</p>
+        <div class="cc-trust"><span>ISO 27001</span><span>HDS</span><span>HOSTED IN FRANCE</span></div>
+      </div>
+      <div>
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="https://www.clever.cloud/developers/doc/deploy/applications/ruby/" target="_blank" rel="noopener">Ruby on Rails runtime</a></li>
+          <li><a href="https://www.clever.cloud/developers/doc/deploy/databases/redis/" target="_blank" rel="noopener">Redis add-on</a></li>
+          <li><a href="https://github.com/Vitiosum/demo-ruby-redis" target="_blank" rel="noopener">Source code on GitHub</a></li>
+        </ul>
+      </div>
+      <div class="academy">
+        <a href="https://academy.clever.cloud/" target="_blank" rel="noopener" class="academy__badge" aria-label="Clever Cloud Academy certification"><%= inline_svg "cc-badge.svg", "academy__svg" %></a>
+        <div>
+          <h4>Clever Cloud Academy</h4>
+          <ul>
+            <li><a class="is-cert" href="https://academy.clever.cloud/" target="_blank" rel="noopener">Get certified ↗</a></li>
+            <li><a href="https://www.clever.cloud" target="_blank" rel="noopener">clever.cloud</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="cc-footer__bottom"><span>Demo built by the Clever Cloud presales team</span><span>© 2026 Clever Cloud</span></div>
+  </div>
+</footer>
+
+<p class="sr-only" id="announce" aria-live="polite"></p>
+<script type="application/json" id="boot"><%= raw json_escape(@snapshot.to_json) %></script>
