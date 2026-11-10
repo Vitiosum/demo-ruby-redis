@@ -22,6 +22,20 @@ class ArcadeFlowTest < ActionDispatch::IntegrationTest
     assert_select "script#boot", /CLV|SET/
   end
 
+  test "the status pill says Local without APP_ID and Live with it" do
+    saved = ENV.delete("APP_ID")
+    get "/"
+    assert_select ".cc-topbar .cc-pill--muted", /Local · not on Clever Cloud/
+    assert_select ".cc-topbar .cc-pill--live", false
+
+    ENV["APP_ID"] = "app_test"
+    get "/"
+    assert_select ".cc-topbar .cc-pill--live", /Live on Clever Cloud/
+    assert_select ".cc-topbar .cc-pill--muted", false
+  ensure
+    saved ? ENV["APP_ID"] = saved : ENV.delete("APP_ID")
+  end
+
   test "POST /scores writes, broadcasts, and GET /board reads it back" do
     assert_broadcasts(Arcade::CHANNEL, 1) do
       post "/scores", params: { score: { initials: "neo", score: 12_345, hits: 33, expired: 3, combo: 20 } }, as: :json

@@ -14,6 +14,11 @@ module ApplicationHelper
     end
   end
 
+  # Clever Cloud injects APP_ID into every application; without it the app runs locally.
+  def on_clever_cloud?
+    ENV["APP_ID"].present?
+  end
+
   # Inline an SVG from app/assets/images so it can use currentColor and CSS.
   def inline_svg(file, css_class)
     svg = Rails.root.join("app/assets/images", file).read

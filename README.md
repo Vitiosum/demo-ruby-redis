@@ -95,7 +95,7 @@ The default high-score tables are seeded at startup (`config.ru`, idempotent wit
 brew install ruby redis && brew services start redis
 bundle install
 bin/rails server                  # http://localhost:3000, REDIS_URL defaults to redis://localhost:6379/0
-bin/rails test                    # 10 tests against a real Redis (database 15 is flushed)
+bin/rails test                    # 11 tests against a real Redis (database 15 is flushed)
 ```
 
 Requires Ruby 4.0 and Rails 8.1.
