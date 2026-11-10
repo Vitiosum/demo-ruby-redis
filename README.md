@@ -2,6 +2,8 @@
 
 > A neon arcade cabinet you can play in 20 seconds, on a phone or a desktop. The game is **TTL RUSH**: keys pop up on a CRT screen with a TTL ring running down, and you hit them before they expire (an expired key replies `(nil)` and breaks your combo). Enter your initials the arcade way, and **Redis does everything the arcade needs**: sorted-set leaderboards, a game counter, a board that expires at midnight, a ticker list, and pub/sub that updates every open screen live. The operator's **service menu** shows the exact Redis commands the last game ran, with their latency. Rails 8.1 on Ruby 4.0, deployed on Clever Cloud, dressed in the Clever Brand Kit.
 
+![Neon Arcade, run locally against a local Redis: a game of TTL RUSH is played, the initials are saved, and the LED boards and the service menu show the new score with the Redis commands it ran](docs/tour.gif)
+
 ![Neon Arcade: LED scoreboard, the cabinet with the TTL RUSH title screen, and the Redis service menu](docs/screenshot.png)
 
 **Run it yourself.** The hosted demo was taken down after the presales review (November 2026). The steps in [Deploy on Clever Cloud](#deploy-on-clever-cloud) recreate it from scratch in about 10 minutes.
